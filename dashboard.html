@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Deccan</title>
+<style>
+body { background-color: #000; color: #0f0; font-family: 'Courier New', Courier, monospace; padding: 20px; }
+h1 { text-align: center; text-shadow: 0 0 10px #0f0; }
+.menu { display: flex; justify-content: center; gap: 20px; margin-top: 30px; flex-wrap: wrap; }
+.menu button { padding: 20px; background-color: #111; border: 2px solid #0f0; border-radius: 10px; font-size: 16px; color: #0f0; cursor: pointer; width: 150px; text-align: center; }
+.menu button:hover { background-color: #0f0; color: #000; }
+#allAccounts, #chatContainer { margin-top: 30px; text-align: center; }
+#allAccounts ul { list-style: none; padding: 0; }
+#allAccounts li { padding: 5px 0; cursor: pointer; }
+#chatBox { border: 2px solid #0f0; border-radius: 10px; padding: 10px; width: 400px; height: 300px; overflow-y: auto; margin: 10px auto; text-align: left; background-color: #111; }
+#chatInput { width: 300px; padding: 10px; margin-right: 5px; background-color: #000; color: #0f0; border: 1px solid #0f0; border-radius: 5px; }
+#sendBtn { padding: 10px; background-color: #0f0; color: #000; border: none; border-radius: 5px; cursor: pointer; }
+#sendBtn:hover { background-color: #00ff00aa; }
+</style>
+</head>
+<body>
+<h1>Welcome, <span id="userName"></span></h1>
+<div class="menu">
+<button onclick="showChatList()">New Chat</button>
+<button onclick="callUser()">Call</button>
+<button onclick="viewAccounts()">View All Accounts</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div id="allAccounts"></div>
+<div id="chatContainer" style="display:none;">
+<h2>Chat with <span id="chatWith"></span></h2>
+<div id="chatBox"></div>
+<input type="text" id="chatInput" placeholder="Type a message...">
+<button id="sendBtn" onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+if(!currentUser) { window.location.href = "login.html"; }
+document.getElementById('userName').innerText = currentUser.codename;
+
+function newChat() { alert("Starting a new chat (Demo)..."); }
+function callUser() { alert("Calling user (Demo)..."); }
+function viewAccounts() {
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    let container = document.getElementById('allAccounts');
+    container.innerHTML = "<h2>All Accounts:</h2><ul>" + users.map(u => `<li>${u.name} (${u.codename}) - ${u.userid}</li>`).join('') + "</ul>";
+}
+
+function logout() {
+    localStorage.removeItem('currentUser');
+    window.location.href = "login.html";
+}
+
+// Chat system
+let selectedUser = null;
+function showChatList() {
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    users = users.filter(u => u.userid !== currentUser.userid); // exclude self
+    let container = document.getElementById('allAccounts');
+    container.innerHTML = "<h2>Select User to Chat:</h2><ul>" + users.map(u => `<li onclick='openChat("${u.userid}", "${u.codename}")'>${u.name} (${u.codename})</li>`).join('') + "</ul>";
+    document.getElementById('chatContainer').style.display = 'none';
+}
+
+function openChat(userid, codename) {
+    selectedUser = userid;
+    document.getElementById('chatWith').innerText = codename;
+    document.getElementById('chatContainer').style.display = 'block';
+    loadMessages();
+}
+
+function getChatKey() {
+    if(!selectedUser) return null;
+    return 'chat_' + currentUser.userid + '_' + selectedUser;
+}
+
+function loadMessages() {
+    let chatKey = getChatKey();
+    let messages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+    let chatBox = document.getElementById('chatBox');
+    chatBox.innerHTML = messages.map(m => `<div><b>${m.sender}:</b> ${m.text}</div>`).join('');
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendMessage() {
+    let input = document.getElementById('chatInput');
+    let text = input.value.trim();
+    if(!text || !selectedUser) return;
+    let chatKey = getChatKey();
+    let messages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+    messages.push({sender: currentUser.codename, text: text});
+    localStorage.setItem(chatKey, JSON.stringify(messages));
+    input.value = '';
+    loadMessages();
+}
+</script>
+</body>
+</html>
